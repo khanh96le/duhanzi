@@ -90,7 +90,7 @@ def update_hanzi_audio(note: dict):
     example_audio = None
 
     example = note['fields']['Example']['value']
-    if example:
+    if example and not note['fields']['ExampleAudio']['value']:
         example_audio = do_gtts(example)
         should_update = True
     if not should_update:

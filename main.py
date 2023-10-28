@@ -1,9 +1,12 @@
+import os
 import requests
 
 from googletts import do_gtts
 
 # Define the AnkiConnect endpoint
 anki_url = "http://127.0.0.1:8765"
+cwd = os.getcwd()
+audio_file_server = "http://localhost:8000/data"
 
 
 def make_request(action, params, version=6):
@@ -42,20 +45,37 @@ def notes_info(node_id: str):
     return result[0]
 
 
-def update_note_audio(note: dict, audio_file: str):
+def update_note_audio(note: dict, audio_file: str, example_audio_file: str):
+    audio_files = []
+    if audio_file:
+        audio_files.append(
+            {
+                "url": f"{audio_file_server}/{audio_file}",
+                "filename": audio_file,
+                "fields": [
+                    "Audio"
+                ]
+            }
+        )
+    if example_audio_file:
+        audio_files.append(
+            {
+                "url": f"{audio_file_server}/{example_audio_file}",
+                "filename": example_audio_file,
+                "fields": [
+                    "ExampleAudio"
+                ]
+            }
+        )
+
     param_data = {
-            "note": {
-                "id": note["noteId"],
+        "note": {
+            "id": note["noteId"],
                 "fields": {
-                    "Audio": ""
+                    "Audio": "",
+                    "ExampleAudio": "",
                 },
-                "audio": [{
-                    "url": f"http://localhost:8000/data/{audio_file}",
-                    "filename": audio_file,
-                    "fields": [
-                        "Audio"
-                    ]
-                }]
+                "audio": audio_files
             }
         }
     return make_request(
@@ -65,21 +85,32 @@ def update_note_audio(note: dict, audio_file: str):
 
 
 def update_hanzi_audio(note: dict):
-    hanzi = note['fields']['Hán tự']['value']
-    audio = do_gtts(hanzi)
+    should_update = False
+    hanzi_audio = None
+    example_audio = None
 
-    note['fields']['Audio']['value'] = audio
-    result = update_note_audio(note, audio)
-    print(f"{note['noteId']} - {result}")
+    example = note['fields']['Example']['value']
+    if example:
+        example_audio = do_gtts(example)
+        should_update = True
+    if not should_update:
+        return
+
+    hanzi = note['fields']['Hán tự']['value']
+    if hanzi:
+        hanzi = note['fields']['Hán tự']['value']
+        hanzi_audio = do_gtts(hanzi)
+        should_update = True
+
+    if should_update:
+        update_note_audio(note, hanzi_audio, example_audio)
+        print(f"{note['noteId']} - done")
 
 
 notes = find_notes('Chinese')
 for note_id in notes:
     note_info = notes_info(note_id)
     if note_info['modelName'] != 'Chinese-Tiếng Việt - Hán tự - Pinyin (and reverse card)':
-        print(f"Skip {note_info}")
+        print(f"Skip {note_info['noteId']}")
         continue
     update_hanzi_audio(note_info)
-
-
-

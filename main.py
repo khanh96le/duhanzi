@@ -1,5 +1,7 @@
 import os
+import re
 import requests
+import time
 
 from googletts import do_gtts
 
@@ -91,6 +93,7 @@ def update_hanzi_audio(note: dict):
 
     example = note['fields']['Example']['value']
     if example and not note['fields']['ExampleAudio']['value']:
+        example = "。".join(re.findall(r'[\u4e00-\u9fff]+', note['fields']['Example']['value']))
         example_audio = do_gtts(example)
         should_update = True
     if not should_update:
@@ -98,7 +101,6 @@ def update_hanzi_audio(note: dict):
 
     hanzi = note['fields']['Hán tự']['value']
     if hanzi:
-        hanzi = note['fields']['Hán tự']['value']
         hanzi_audio = do_gtts(hanzi)
         should_update = True
 
@@ -107,10 +109,14 @@ def update_hanzi_audio(note: dict):
         print(f"{note['noteId']} - done")
 
 
-notes = find_notes('Chinese')
-for note_id in notes:
-    note_info = notes_info(note_id)
-    if note_info['modelName'] != 'Chinese-Tiếng Việt - Hán tự - Pinyin (and reverse card)':
-        print(f"Skip {note_info['noteId']}")
-        continue
-    update_hanzi_audio(note_info)
+if __name__ == '__main__':
+    start_time = time.time()
+    notes = find_notes('Chinese')
+    for note_id in notes:
+        note_info = notes_info(note_id)
+        if note_info['modelName'] != 'Chinese-Tiếng Việt - Hán tự - Pinyin - Audio (and reverse card)':
+            print(f"Skip {note_info['noteId']}")
+            continue
+        update_hanzi_audio(note_info)
+    end_time = time.time()
+    print(f"Finised in {end_time - start_time}s")

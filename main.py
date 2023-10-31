@@ -1,5 +1,7 @@
 import os
 import re
+from typing import List
+
 import requests
 import time
 
@@ -37,14 +39,12 @@ def find_notes(deck_name):
     )
 
 
-def notes_info(node_id: str):
+def notes_info(node_ids: List[str]):
     result = make_request(
         "notesInfo",
-        {"notes": [node_id]}
+        {"notes": node_ids}
     )
-    if not result:
-        return []
-    return result[0]
+    return result
 
 
 def update_note_audio(note: dict, audio_file: str, example_audio_file: str):
@@ -112,11 +112,11 @@ def update_hanzi_audio(note: dict):
 if __name__ == '__main__':
     start_time = time.time()
     notes = find_notes('Chinese')
-    for note_id in notes:
-        note_info = notes_info(note_id)
+    notes_data = notes_info(notes)
+    for note_info in notes_data:
         if note_info['modelName'] != 'Chinese-Tiếng Việt - Hán tự - Pinyin - Audio (and reverse card)':
             print(f"Skip {note_info['noteId']}")
             continue
         update_hanzi_audio(note_info)
     end_time = time.time()
-    print(f"Finised in {end_time - start_time}s")
+    print(f"Finished in {end_time - start_time}s")
